@@ -64,8 +64,9 @@ BertClass.prototype.decodebuf = function (S) { return Bert.decode(Bert.bytes_to_
 BertClass.prototype.encodebuf = function (S) { 
     var ori = Bert.encode(S);
     var buf = new Uint8Array(new ArrayBuffer(ori.length));
-    for (var i=0;i<buf.length;i++) buf[i] = ori.charCodeAt(i);
-    return buf
+    for (var i=0; i < buf.length; i++)
+        buf[i] = ori.charCodeAt(i);
+    return new Blob([buf.buffer]);
 };
 
 
