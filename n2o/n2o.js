@@ -19,8 +19,10 @@ var utf8 = {};
 
 function addStatus(text){
     var date = new Date();
-    document.getElementById('n2ostatus').innerHTML =
-    document.getElementById('n2ostatus').innerHTML + "E> " + text + "<br/>";
+    if (document.getElementById('n2ostatus')) {
+        document.getElementById('n2ostatus').innerHTML =
+            document.getElementById('n2ostatus').innerHTML + "E> " + text + "<br/>";
+    }
 }
 
 utf8.toByteArray = function(str) {
