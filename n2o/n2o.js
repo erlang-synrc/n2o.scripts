@@ -52,9 +52,16 @@ function WebSocketsInit(){
         ws.onopen = function() { if (!initialized) { ws.send(['N2O', transition.pid]); initialized = true; } };
         ws.onmessage = function (evt) {
             msg = evt.data;
-            var actions = msg;//Bert.decodebuf(msg);;
-            addStatus("Received: '" + actions + "'");
-            try{eval(actions);}catch(e){console.log(e); console.log(actions);};
+            var actions = msg;
+            var tag = actions.substr(0,4);
+            var body = actions.substr(4);
+            if (tag == "DATA") {
+                addStatus("Received: " + body);
+                if (typeof handle_web_socket == 'function') handle_web_socket(body);
+            } else {
+                addStatus("Evaluate: " + body);
+                try{eval(body);}catch(e){console.log(e); console.log(body);};
+            }
         };
         ws.onclose = function() { addStatus("websocket was closed"); };
     } else {
@@ -63,3 +70,4 @@ function WebSocketsInit(){
 }
 
 WebSocketsInit();
+
