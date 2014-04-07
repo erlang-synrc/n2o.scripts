@@ -278,4 +278,6 @@ BertClass.prototype.bytes_to_string = function (byteArray) {
     return decodeURIComponent(s);
 };
 
-var Bert = new BertClass();
+var bert = new BertClass();
+var Bert = bert;
+
