@@ -53,15 +53,18 @@ function WebSocketsInit(){
         ws.onmessage = function (evt) {
             msg = evt.data;
             var actions = msg;
-            var tag = actions.substr(0,4);
-            var body = actions.substr(4);
-            if (tag == "DATA") {
-                addStatus("Received: " + body);
-                if (typeof handle_web_socket == 'function') handle_web_socket(body);
-            } else {
-                addStatus("Evaluate: " + body);
-                try{eval(body);}catch(e){console.log(e); console.log(body);};
+            var O = JSON.parse(actions);
+
+            if (typeof handle_web_socket == 'function' && O.data) {
+                addStatus("Received: " + Bert.decodebuf(O.data));
+                handle_web_socket(O.data);
             }
+
+            if (O.eval) {
+                addStatus("Evaluate: " + O.eval);
+                try{eval(O.eval);}catch(e){console.log(e); console.log(O.eval);};
+            }
+
         };
         ws.onclose = function() { addStatus("websocket was closed"); };
     } else {
