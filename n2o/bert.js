@@ -268,16 +268,9 @@ BertClass.prototype.bytes_to_bignum = function (S, Count) {
 
 BertClass.prototype.bytes_to_string = function (byteArray) {
     var i, s = "";
-    for (i = 0; i < byteArray.length; i++) {
-        s += byteArray[i] === 0x25 ? "%25" :
-        (i > 3 ? 
-            (byteArray[i] <= 0x7F ? String.fromCharCode(byteArray[i]) : "%" + byteArray[i].toString(16).toUpperCase())
-            : String.fromCharCode(byteArray[i]) 
-        );
-    }
-    return decodeURIComponent(s);
+    for (i = 0; i < byteArray.length; i++) s += String.fromCharCode(byteArray[i]);
+    return s;
 };
 
 var bert = new BertClass();
 var Bert = bert;
-
