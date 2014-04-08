@@ -1,18 +1,3 @@
-(function($){
-  $.fn.vals = function(){
-    if(this.attr('data-list')){
-      var vals = [];
-      $('[name='+ this.attr('id')+']').each(function(i){ vals[i] = $(this).val() });
-      return vals.join();
-    } else if(this.attr('data-html')) {
-      return this.html();
-    } else if(this.attr('data-toggle')=='checkbox') {
-        if (this.is(':checked')) return this.val(); else return 'undefined';
-    } else
-      return $.fn.val.apply(this, arguments);
-    }
-})(window.jQuery || window.Zepto);
-
 var msg = 0;
 var ws;
 var utf8 = {};
@@ -26,7 +11,6 @@ function addStatus(text){
 }
 
 utf8.toByteArray = function(str) {
-    if($.isArray(str)) str = str.join();
     var byteArray = [];
     if (str !== undefined && str !== null)
     for (var i = 0; i < str.length; i++)
@@ -61,8 +45,8 @@ function WebSocketsInit(){
             }
 
             if (O.eval) {
-                addStatus("Evaluate: " + O.eval);
                 try{eval(O.eval);}catch(e){console.log(e); console.log(O.eval);};
+                addStatus("Evaluate: " + O.eval);
             }
 
         };
