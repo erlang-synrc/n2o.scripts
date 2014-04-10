@@ -143,14 +143,12 @@ function bullet(url) {
             stream.onmessage(e);
             };
         }
+
         init();
 
-        this.onopen = function(){};
-        this.oninit = function(){};
-        this.onmessage = function(){};
-        this.ondisconnect = function(){};
-        this.onclose = function(){};    
-        this.onheartbeat = function(){ return this.send('PING'); };
+        this.onopen = function(){};     this.oninit = function(){};
+        this.onmessage = function(){};  this.ondisconnect = function(){};
+        this.onclose = function(){};    this.onheartbeat = function(){ return this.send('PING'); };
 
         this.setURL = function(newURL) { url = newURL; };
         this.send = function(data){

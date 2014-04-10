@@ -2,7 +2,7 @@ var msg = 0;
 var ws;
 var utf8 = {};
 
-WebSocket = undefined;
+//WebSocket = undefined; // test XHR fallback
 
 function addStatus(text){
     var date = new Date();
