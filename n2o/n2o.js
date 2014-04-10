@@ -2,6 +2,8 @@ var msg = 0;
 var ws;
 var utf8 = {};
 
+WebSocket = undefined;
+
 function addStatus(text){
     var date = new Date();
     if (document.getElementById('n2ostatus')) {
@@ -26,18 +28,16 @@ utf8.toByteArray = function(str) {
 
 function WebSocketsInit(){
     if ("MozWebSocket" in window) { WebSocket = MozWebSocket; }
-    var port = transition.port;
     if ("WebSocket" in window) {
-        ws = new bullet("ws://"+window.location.hostname+ 
-                    ":"+ port +
-                   "/ws"+window.location.pathname+
-                                window.location.search);
+        ws = new bullet("ws://"+
+          (null == transition.host ? window.location.hostname : transition.host)
+               + ":"+ (null == transition.port ? window.location.port : transition.port)
+             + "/ws" + window.location.pathname + window.location.search);
         initialized = false;
-        ws.onopen = function() { if (!initialized) { ws.send(['N2O', transition.pid]); initialized = true; } };
         ws.onmessage = function (evt) {
-            msg = evt.data;
-            var actions = msg;
-            var O = JSON.parse(actions);
+
+            msg = JSON.parse(evt.data);
+            var O = msg;
 
             if (typeof handle_web_socket == 'function' && O.data) {
                 addStatus("Received: " + Bert.decodebuf(O.data));
@@ -50,6 +50,7 @@ function WebSocketsInit(){
             }
 
         };
+        ws.onopen = function() { if (!initialized) { ws.send(['N2O', transition.pid]); initialized = true; } };
         ws.onclose = function() { addStatus("websocket was closed"); };
     } else {
         addStatus("sorry, your browser does not support websockets.");
