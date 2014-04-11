@@ -36,17 +36,50 @@ function WebSocketsInit(){
         initialized = false;
         ws.onmessage = function (evt) {
 
-            msg = JSON.parse(evt.data);
-            var O = msg;
+            try { // try to parse JSON envelop {eval:"",data:""}
 
-            if (typeof handle_web_socket == 'function' && O.data) {
-                addStatus("Received: " + Bert.decodebuf(O.data));
-                handle_web_socket(O.data);
-            }
+                msg = JSON.parse(evt.data);
 
-            if (O.eval) {
-                try{eval(O.eval);}catch(e){console.log(e); console.log(O.eval);};
-                addStatus("Evaluate: " + O.eval);
+                if (typeof handle_web_socket == 'function' && msg.data) { // Data
+                    addStatus("Received: " + bert.decodebuf(msg.data));
+                    handle_web_socket(msg.data);
+                }
+
+                if (msg.eval) { // Eval
+                    try{eval(msg.eval);}catch(e){console.log(e); console.log(msg.eval);};
+                    addStatus("Evaluate: " + msg.eval);
+                }
+
+            } catch (ex) { // try to parse known binary formats
+
+                var reader = new FileReader();
+                reader.addEventListener("loadend", function() {
+
+                    try { // BERT encoding
+
+                        var erlang = bert.decodebuf(reader.result);
+                        if (typeof handle_web_socket == 'function')
+                             handle_web_socket(reader.result);
+                        else console.log("Raw BERT Received: " + erlang);
+
+                    } catch (x) { // Unknown Binaries
+
+                        if (typeof handle_web_socket_blob == 'function')
+                             handle_web_socket_blob(reader.result);
+                        else {
+                            if (reader.result.byteLength > 0) {
+                                var dataView = new DataView(reader.result);
+                                var s = dataView.getInt8(0).toString();
+                                for (var i=1;i<reader.result.byteLength;i++)
+                                    s = s + "," + dataView.getInt8(i).toString();
+                                console.log("Unknown Raw Binary Received: [" + s + "]");
+                            }
+                        }
+                    }
+
+                });
+                reader.readAsArrayBuffer(evt.data);
+
             }
 
         };
