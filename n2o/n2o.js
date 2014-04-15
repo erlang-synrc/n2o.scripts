@@ -41,13 +41,13 @@ function WebSocketsInit(){
                 msg = JSON.parse(evt.data);
 
                 if (typeof handle_web_socket == 'function' && msg.data) { // Data
-                    addStatus("Received: " + bert.decodebuf(msg.data));
+//                    addStatus("Received: " + bert.decodebuf(msg.data));
                     handle_web_socket(msg.data);
                 }
 
                 if (msg.eval) { // Eval
                     try{eval(msg.eval);}catch(e){console.log(e); console.log(msg.eval);};
-                    addStatus("Evaluate: " + msg.eval);
+//                    addStatus("Evaluate: " + msg.eval);
                 }
 
             } catch (ex) { // try to parse known binary formats
