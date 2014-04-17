@@ -52,8 +52,8 @@ function Upload(id, options){
     start_file_index = file_index;
 
     if (paused) paused = false;
-    var type = (file.type === "") ? Bert.atom('undefined') : Bert.binary(file.type);
-    dispatchEvent("start_upload", {'file_name': Bert.binary(file.name), 'type': type, 'index': file_index});
+    var type = (file.type === "") ? atom('undefined') : bin(file.type);
+    dispatchEvent("start_upload", {'file_name': bin(file.name), 'type': type, 'index': file_index});
   };
 
   var read_slice = function(start, end)   {
@@ -67,7 +67,7 @@ function Upload(id, options){
 
   var onloadend = function(e){
     if(e.target.readyState == FileReader.DONE){
-      dispatchEvent('deliver', {'pid': utf8.toByteArray(self.pid), 'data': Bert.binary(e.target.result)})
+      dispatchEvent('deliver', {'pid': utf8.toByteArray(self.pid), 'data': bin(e.target.result)})
     }
   };
 
@@ -115,7 +115,7 @@ function Upload(id, options){
 
     if(options.preview=='true') update_preview();
 
-    dispatchEvent("query_file", {'file_name': Bert.binary(file.name)});
+    dispatchEvent("query_file", {'file_name': bin(file.name)});
   });
 
   $input.addEventListener('queried', function(e){
@@ -164,7 +164,7 @@ function Upload(id, options){
       browse_btn.style.display='block';
       progress_label.innerHTML='Upload complete';
       etainfo.innerHTML='';
-      dispatchEvent('complete', {'pid': Bert.binary(self.pid)});
+      dispatchEvent('complete', {'pid': bin(self.pid)});
     }
   });
 
@@ -198,7 +198,7 @@ function Upload(id, options){
     pause_btn.style.display='none';
     resume_btn.style.display='block';
     progress_label.innerHTML='';
-    dispatchEvent('complete', {'pid': Bert.binary(self.pid)});
+    dispatchEvent('complete', {'pid': bin(self.pid)});
   };
 
   var etainfo = create_el('span','info');
