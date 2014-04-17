@@ -1,7 +1,17 @@
 // Micro BERT encoder/decoder
 // Copyright (c) Maxim Sokhatsky (@5HT)
 
-bert = {};
+function atom(o) { return { type: "Atom", value: o, toString: function() { return this.value; } }; };
+function bin(o) { return { type: "Binary", value: o, toString: function() { "<<'"+this.value;+"'>>" } }; };
+function tuple() {
+    return { type: "Tuple", value: arguments, toString: function() { var s = ""; 
+        for (var i=0;i<this.value.length;i++) { if (s!=="") s+=","; s+=this.value[i]; }
+        return "{" + s + "}"; } }; };
+function dec(S) { return decode(ltoa(new Uint8Array(S))); };
+function enc(s) {
+    var ori = encode(s), buf = new Uint8Array(new ArrayBuffer(ori.length)), s = "";
+    for (var i=0; i < buf.length; i++) { buf[i] = ori.charCodeAt(i); s+=","+buf[i]; }
+    return new Blob([buf.buffer]); };
 
 BERT = itoa(131);
 SATOM = itoa(115);
@@ -44,15 +54,6 @@ function ltoi(S, Length) {
     if (isNegative) { Num = Num * (0 - 1); }
     return Num; };
 
-
-function atom(o) { return { type: "Atom", value: o, toString: function() { return this.value; } }; };
-function binary(o) { return { type: "Binary", value: o, toString: function() { "<<'"+this.value;+"'>>" } }; };
-function tuple() {
-    return { type: "Tuple", value: arguments, toString: function() { var s = ""; 
-        for (var i=0;i<this.value.length;i++) { if (s!=="") s+=","; s+=this.value[i]; }
-        return "{" + s + "}"; } };
-};
-
 function encode(o) { return BERT + en_inner(o); };
 function en_inner(Obj) { if(Obj === undefined) return NIL; var func = 'en_' + typeof(Obj); return eval(func)(Obj); };
 function en_string(Obj) { return STR + itol(Obj.length, 2) + Obj; };
@@ -63,12 +64,12 @@ function en_number(Obj) { var s, isi = (Obj % 1 === 0); if (!isi) { return en_fl
 function en_float(Obj) { var s = Obj.toExponential(); while (s.length < 31) { s += ZERO; } return FLOAT + s; };
 function en_object(Obj) {
     if (Obj.type === "Atom") return en_atom(Obj);
-    if (Obj.type === "Binary") return en_binary(Obj);
+    if (Obj.type === "Binary") return en_bin(Obj);
     if (Obj.type === "Tuple") return en_tuple(Obj);
     if (Obj.constructor.toString().indexOf("Array") !== -1) return en_array(Obj);
     return en_associative_array(Obj); };
 function en_atom(Obj) { return ATOM + itol(Obj.value.length, 2) + Obj.value; };
-function en_binary(Obj) { return BINARY + itol(Obj.value.length, 4) + Obj.value; };
+function en_bin(Obj) { return BINARY + itol(Obj.value.length, 4) + Obj.value; };
 function en_tuple(Obj) {
     var i, s = "";
     if (Obj.value.length < 256) { s += TUPLE + itol(Obj.value.length, 1); }
@@ -96,7 +97,7 @@ function de_inner(S) {
     switch (Type) {
         case SATOM: de_atom(S, 1);
         case ATOM: return de_atom(S, 2);
-        case BINARY: return de_binary(S);
+        case BINARY: return de_bin(S);
         case SINT: return de_integer(S, 1);
         case INT: return de_integer(S, 4);
         case FLOAT: return de_float(S);
@@ -113,10 +114,10 @@ function de_atom(S, Count) {
     if (Value === "true") { Value = true; }
     else if (Value === "false") { Value = false; }
     return { value: atom(Value), rest:  S.substring(Size) }; };
-function de_binary(S) {
+function de_bin(S) {
     var Size = ltoi(S, 4);
     S = S.substring(4);
-    return { value: binary(S.substring(0, Size)), rest: S.substring(Size) }; };
+    return { value: bin(S.substring(0, Size)), rest: S.substring(Size) }; };
 function de_integer(S, Count) {
     var Value = ltoi(S, Count);
     S = S.substring(Count);
@@ -145,16 +146,10 @@ function de_tuple(S, Count) {
     return { value: tuple(Arr), rest: S }; };
 function de_nil(S) { return { value: [], rest: S }; };
 
-
-// public API
-
+bert = {};
 bert.atom = atom;
-bert.binary = binary;
+bert.binary = bin;
 bert.tuple = tuple;
-bert.decodebuf = function (S) { return decode(ltoa(new Uint8Array(S))); };
-bert.encodebuf = function (s) { 
-    var ori = encode(s), buf = new Uint8Array(new ArrayBuffer(ori.length)), s = "";
-    for (var i=0; i < buf.length; i++) { buf[i] = ori.charCodeAt(i); s+=","+buf[i]; }
-    return new Blob([buf.buffer]); };
-
+bert.decodebuf = dec;
+bert.encodebuf = enc;
 Bert = bert;
