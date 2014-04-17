@@ -40,6 +40,7 @@ function Upload(id, options){
     info.innerHTML='';
     progress_label.innerHTML='';
     progress_bar.style.width="0";
+    $input.value='';
   };
 
   var begin_upload = function(){
@@ -52,7 +53,7 @@ function Upload(id, options){
 
     if (paused) paused = false;
     var type = (file.type === "") ? Bert.atom('undefined') : Bert.binary(file.type);
-    dispatchEvent("start_upload", {'file_name': Bert.binary(file.name), 'type': type});
+    dispatchEvent("start_upload", {'file_name': Bert.binary(file.name), 'type': type, 'index': file_index});
   };
 
   var read_slice = function(start, end)   {
@@ -125,8 +126,8 @@ function Upload(id, options){
       file_index = size;
       hide_btns();
 
-      browse_btn.style.display='block';
       reupload_btn.style.display='block';
+      cancel_btn.style.display='block';
 
       if (file_index < file.size) {
         resume_btn.style.display='block';
@@ -140,7 +141,7 @@ function Upload(id, options){
 
   $input.addEventListener('read_slice', function(e){
     self.pid = e.detail.pid;
-    read_slice(file_index, block_size);
+    read_slice(file_index, file_index + block_size);
   });
 
   $input.addEventListener('delivered', function(e){
@@ -167,7 +168,6 @@ function Upload(id, options){
     }
   });
 
-  $input.addEventListener('done', function(){});
   $input.addEventListener('error', function(e){ error(e.detail.msg); });
   $input.addEventListener('reset', reset_upload);
   $input.addEventListener('progress_changed', function(e){progress_bar.style.width=e.detail.progress + "%";});
@@ -198,6 +198,7 @@ function Upload(id, options){
     pause_btn.style.display='none';
     resume_btn.style.display='block';
     progress_label.innerHTML='';
+    dispatchEvent('complete', {'pid': Bert.binary(self.pid)});
   };
 
   var etainfo = create_el('span','info');
