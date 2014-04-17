@@ -57,7 +57,7 @@ function WebSocketsInit(){
 
                     try { // BERT encoding
 
-                        var erlang = bert.decodebuf(reader.result);
+                        var erlang = dec(reader.result);
                         if (typeof handle_web_socket == 'function')
                              handle_web_socket(reader.result);
                         else console.log("Raw BERT Received: " + erlang);

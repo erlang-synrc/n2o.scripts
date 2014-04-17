@@ -145,11 +145,3 @@ function de_tuple(S, Count) {
     for (i = 0; i < Size; i++) { El = de_inner(S); Arr.push(El.value); S = El.rest; }
     return { value: tuple(Arr), rest: S }; };
 function de_nil(S) { return { value: [], rest: S }; };
-
-bert = {};
-bert.atom = atom;
-bert.binary = bin;
-bert.tuple = tuple;
-bert.decodebuf = dec;
-bert.encodebuf = enc;
-Bert = bert;
