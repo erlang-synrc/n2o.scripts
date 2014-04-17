@@ -1,5 +1,5 @@
 
-// Micro BER encoder/decode
+// Micro BER encoder/decoder
 // Copyright (c) Maxim Sokhatsky (@5HT)
 
 bert = {};
@@ -22,8 +22,7 @@ ZERO = itoa(0);
 bert.atom = function (o) { return { type: "Atom", value: o, toString: function() { return this.value; } }; };
 bert.binary = function (o) { return { type: "Binary", value: o, toString: function() { "<<'"+this.value;+"'>>" } }; };
 bert.tuple = function() {
-    var a = arguments;
-    return { type: "Tuple", length: a.value, value: a, toString: function() { var s = ""; 
+    return { type: "Tuple", value: arguments, toString: function() { var s = ""; 
         for (var i=0;i<this.value.length;i++) { if (s!=="") s+=","; s+=this.value[i]; }
         return "{" + s + "}"; } };
 };
