@@ -1,224 +1,162 @@
-// BERT-JS
-//
-// Copyright (c) Rusty Klophaus (@rklophaus)
-//               Ben Browning (@bbrowning)
-//               Maxim Sokhatsky (@5HT)
 
-function BertClass() {
-    this.BERT_START = String.fromCharCode(131);
-    this.SMALL_ATOM = String.fromCharCode(115);
-    this.ATOM = String.fromCharCode(100);
-    this.BINARY = String.fromCharCode(109);
-    this.SMALL_INTEGER = String.fromCharCode(97);
-    this.INTEGER = String.fromCharCode(98);
-    this.SMALL_BIG = String.fromCharCode(110);
-    this.LARGE_BIG = String.fromCharCode(111);
-    this.FLOAT = String.fromCharCode(99);
-    this.STRING = String.fromCharCode(107);
-    this.LIST = String.fromCharCode(108);
-    this.SMALL_TUPLE = String.fromCharCode(104);
-    this.LARGE_TUPLE = String.fromCharCode(105);
-    this.NIL = String.fromCharCode(106);
-    this.ZERO = String.fromCharCode(0);
-}
+// Micro BER encoder/decode
+// Copyright (c) Maxim Sokhatsky (@5HT)
 
-function BertAtom(Obj) {
-    this.type = "Atom";
-    this.value = Obj;
-    this.toString = function () { return Obj; };
-}
+bert = {};
+itoa = String.fromCharCode;
 
-function BertBinary(Obj) {
-    this.type = "Binary";
-    this.value = Obj;
-    this.toString = function () { return "<<\"" + Obj + "\">>"; };
-}
+BERT = itoa(131);
+SATOM = itoa(115);
+ATOM = itoa(100);
+BINARY = itoa(109);
+SINT = itoa(97);
+INT = itoa(98);
+FLOAT = itoa(99);
+STR = itoa(107);
+LIST = itoa(108);
+TUPLE = itoa(104);
+LTUPLE = itoa(105);
+NIL = itoa(106);
+ZERO = itoa(0);
 
-function BertTuple(Arr) {
-    this.type = "Tuple";
-    this.length = Arr.length;
-    this.value = Arr;
-    for (var i = 0; i < Arr.length; i++) { this[i] = Arr[i]; }
-    this.toString = function () {
-        var i, s = "";
-        for (i = 0; i < this.length; i++) { if (s !== "") { s += ", "; } s += this[i].toString(); }
-        return "{" + s + "}";
-    };
-}
-
-// - INTERFACE -
-
-BertClass.prototype.atom = function (Obj) { return new BertAtom(Obj); };
-BertClass.prototype.binary = function (Obj) { return new BertBinary(Obj); };
-BertClass.prototype.tuple = function () { return new BertTuple(arguments); };
-BertClass.prototype.encode = function (Obj) { return this.BERT_START + this.encode_inner(Obj); };
-BertClass.prototype.decode = function (S) {
-    if (S[0] !== this.BERT_START) { throw ("Not a valid BERT."); }
-    var Obj = this.decode_inner(S.substring(1));
-    if (Obj.rest !== "") { throw ("Invalid BERT."); }
-    return Obj.value;
+bert.atom = function (o) { return { type: "Atom", value: o, toString: function() { return this.value; } }; };
+bert.binary = function (o) { return { type: "Binary", value: o, toString: function() { "<<'"+this.value;+"'>>" } }; };
+bert.tuple = function() {
+    var a = arguments;
+    return { type: "Tuple", length: a.value, value: a, toString: function() { var s = ""; 
+        for (var i=0;i<this.value.length;i++) { if (s!=="") s+=","; s+=this.value[i]; }
+        return "{" + s + "}"; } };
 };
 
-BertClass.prototype.decodebuf = function (S) { return Bert.decode(Bert.bytes_to_string(new Uint8Array(S))); };
-//BertClass.prototype.decodebuf = function (S) { return Bert.decode(utf8.toByteArray(S)); };
-BertClass.prototype.encodebuf = function (S) { 
-    var ori = Bert.encode(S);
-    var buf = new Uint8Array(new ArrayBuffer(ori.length));
-    for (var i=0; i < buf.length; i++)
-        buf[i] = ori.charCodeAt(i);
-    return new Blob([buf.buffer]);
+bert.en_inner = function (Obj) {
+    if(Obj === undefined) return NIL;
+    var func = 'en_' + typeof(Obj);
+    return bert[func](Obj);
 };
 
-
-// - ENCODING -
-
-BertClass.prototype.encode_inner = function (Obj) {
-    if(Obj === undefined) return this.NIL;
-    var func = 'encode_' + typeof(Obj);
-    return this[func](Obj);
+bert.en_string = function (Obj) { return STR + itol(Obj.length, 2) + Obj; };
+bert.en_boolean = function (Obj) {
+    if (Obj) { return bert.en_inner(bert.atom("true")); }
+    else { return bert.en_inner(bert.atom("false")); }
 };
 
-BertClass.prototype.encode_string = function (Obj) { return this.STRING + this.int_to_bytes(Obj.length, 2) + Obj; };
-BertClass.prototype.encode_boolean = function (Obj) {
-    if (Obj) { return this.encode_inner(this.atom("true")); }
-    else { return this.encode_inner(this.atom("false")); }
-};
-
-BertClass.prototype.encode_number = function (Obj) {
+bert.en_number = function (Obj) {
     var s, isInteger = (Obj % 1 === 0);
-    if (!isInteger) { return this.encode_float(Obj); }
-    if (isInteger && Obj >= 0 && Obj < 256) { return this.SMALL_INTEGER + this.int_to_bytes(Obj, 1); }
-    if (isInteger && Obj >= -134217728 && Obj <= 134217727) { return this.INTEGER + this.int_to_bytes(Obj, 4); }
-    s = this.bignum_to_bytes(Obj);
-    if (s.length < 256) { return this.SMALL_BIG + this.int_to_bytes(s.length - 1, 1) + s; } 
-    else { return this.LARGE_BIG + this.int_to_bytes(s.length - 1, 4) + s; }
+    if (!isInteger) { return bert.en_float(Obj); }
+    if (isInteger && Obj >= 0 && Obj < 256) { return SINT + itol(Obj, 1); }
+    return INT + itol(Obj, 4);
 };
 
-BertClass.prototype.encode_float = function (Obj) {
+bert.en_float = function (Obj) {
     var s = Obj.toExponential();
-    while (s.length < 31) { s += this.ZERO; }
-    return this.FLOAT + s;
+    while (s.length < 31) { s += ZERO; }
+    return FLOAT + s;
 };
 
-BertClass.prototype.encode_object = function (Obj) {
-    if (Obj.type === "Atom") { return this.encode_atom(Obj); }
-    if (Obj.type === "Binary") { return this.encode_binary(Obj); }
-    if (Obj.type === "Tuple") { return this.encode_tuple(Obj); }
-    if (Obj.constructor.toString().indexOf("Array") !== -1) { return this.encode_array(Obj); }
-    return this.encode_associative_array(Obj);
+bert.en_object = function (Obj) {
+    if (Obj.type === "Atom") { return bert.en_atom(Obj); }
+    if (Obj.type === "Binary") { return bert.en_binary(Obj); }
+    if (Obj.type === "Tuple") { return bert.en_tuple(Obj); }
+    if (Obj.constructor.toString().indexOf("Array") !== -1) { return bert.en_array(Obj); }
+    return bert.en_associative_array(Obj);
 };
 
-BertClass.prototype.encode_atom = function (Obj) { return this.ATOM + this.int_to_bytes(Obj.value.length, 2) + Obj.value; };
-BertClass.prototype.encode_binary = function (Obj) { return this.BINARY + this.int_to_bytes(Obj.value.length, 4) + Obj.value; };
-BertClass.prototype.encode_tuple = function (Obj) {
+bert.en_atom = function (Obj) { return ATOM + itol(Obj.value.length, 2) + Obj.value; };
+bert.en_binary = function (Obj) { return BINARY + itol(Obj.value.length, 4) + Obj.value; };
+bert.en_tuple = function (Obj) {
     var i, s = "";
-    if (Obj.length < 256) { s += this.SMALL_TUPLE + this.int_to_bytes(Obj.length, 1); }
-    else { s += this.LARGE_TUPLE + this.int_to_bytes(Obj.length, 4); }
-    for (i = 0; i < Obj.length; i++) { s += this.encode_inner(Obj[i]); }
+    if (Obj.value.length < 256) { s += TUPLE + itol(Obj.value.length, 1); }
+    else { s += LTUPLE + itol(Obj.value.length, 4); }
+    for (i = 0; i < Obj.value.length; i++) { s += bert.en_inner(Obj.value[i]); }
     return s;
 };
 
-BertClass.prototype.encode_array = function (Obj) {
-    var i, s = this.LIST + this.int_to_bytes(Obj.length, 4);
-    for (i = 0; i < Obj.length; i++) { s += this.encode_inner(Obj[i]); }
-    s += this.NIL;
+bert.en_array = function (Obj) {
+    var i, s = LIST + itol(Obj.length, 4);
+    for (i = 0; i < Obj.length; i++) { s += bert.en_inner(Obj[i]); }
+    s += NIL;
     return s;
 };
 
-BertClass.prototype.encode_associative_array = function (Obj) {
+bert.en_associative_array = function (Obj) {
     var key, Arr = [];
-    for (key in Obj) { if (Obj.hasOwnProperty(key)) { Arr.push(this.tuple(this.atom(key), Obj[key])); } }
-    return this.encode_array(Arr);
+    for (key in Obj) { if (Obj.hasOwnProperty(key)) { Arr.push(bert.tuple(bert.atom(key), Obj[key])); } }
+    return bert.en_array(Arr);
 };
 
-// - DECODING -
-
-BertClass.prototype.decode_inner = function (S) {
-    var Type = S[0];
-    S = S.substring(1);
-    switch (Type) {
-        case this.SMALL_ATOM: return this.decode_atom(S, 1);
-        case this.ATOM: return this.decode_atom(S, 2);
-        case this.BINARY: return this.decode_binary(S);
-        case this.SMALL_INTEGER: return this.decode_integer(S, 1);
-        case this.INTEGER: return this.decode_integer(S, 4);
-        case this.SMALL_BIG: return this.decode_big(S, 1);
-        case this.LARGE_BIG: return this.decode_big(S, 4);
-        case this.FLOAT: return this.decode_float(S);
-        case this.STRING: return this.decode_string(S);
-        case this.LIST: return this.decode_list(S);
-        case this.SMALL_TUPLE: return this.decode_tuple(S, 1);
-        case this.LARGE_TUPLE: return this.decode_large_tuple(S, 4);
-        case this.NIL: return this.decode_nil(S);
-        default: throw ("Unexpected BERT type: " + S.charCodeAt(0));
-    }
-};
-
-BertClass.prototype.decode_atom = function (S, Count) {
+bert.de_atom = function (S, Count) {
     var Size, Value;
-    Size = this.bytes_to_int(S, Count);
+    Size = ltoi(S, Count);
     S = S.substring(Count);
     Value = S.substring(0, Size);
     if (Value === "true") { Value = true; }
     else if (Value === "false") { Value = false; }
-    return { value: this.atom(Value), rest:  S.substring(Size) };
+    return { value: bert.atom(Value), rest:  S.substring(Size) };
 };
 
-BertClass.prototype.decode_binary = function (S) {
-    var Size = this.bytes_to_int(S, 4);
+bert.de_binary = function (S) {
+    var Size = ltoi(S, 4);
     S = S.substring(4);
-    return { value: this.binary(S.substring(0, Size)), rest:  S.substring(Size) };
+    return { value: bert.binary(S.substring(0, Size)), rest: S.substring(Size) };
 };
 
-BertClass.prototype.decode_integer = function (S, Count) {
-    var Value = this.bytes_to_int(S, Count);
+bert.de_integer = function (S, Count) {
+    var Value = ltoi(S, Count);
     S = S.substring(Count);
     return { value: Value, rest: S };
 };
 
-BertClass.prototype.decode_big = function (S, Count) {
-    var Size, Value;
-    Size = this.bytes_to_int(S, Count);
-    S = S.substring(Count);
-    Value = this.bytes_to_bignum(S, Size);
-    return { value : Value, rest: S.substring(Size + 1) };
-};
-
-BertClass.prototype.decode_float = function (S) {
+bert.de_float = function (S) {
     var Size = 31;
     return { value: parseFloat(S.substring(0, Size)), rest: S.substring(Size) };
 };
 
-BertClass.prototype.decode_string = function (S) {
-    var Size = this.bytes_to_int(S, 2);
+bert.de_string = function (S) {
+    var Size = ltoi(S, 2);
     S = S.substring(2);
     return { value: S.substring(0, Size), rest:  S.substring(Size) };
 };
 
-BertClass.prototype.decode_list = function (S) {
+bert.de_list = function (S) {
     var Size, i, El, LastChar, Arr = [];
-    Size = this.bytes_to_int(S, 4);
+    Size = ltoi(S, 4);
     S = S.substring(4);
-    for (i = 0; i < Size; i++) { El = this.decode_inner(S); Arr.push(El.value); S = El.rest; }
+    for (i = 0; i < Size; i++) { El = bert.de_inner(S); Arr.push(El.value); S = El.rest; }
     LastChar = S[0];
-    if (LastChar !== this.NIL) { throw ("List does not end with NIL!"); }
+    if (LastChar !== NIL) { throw ("BERT: Wrong NIL."); }
     S = S.substring(1);
     return { value: Arr, rest: S };
 };
 
-BertClass.prototype.decode_tuple = function (S, Count) {
+bert.de_tuple = function (S, Count) {
     var Size, i, El, Arr = [];
-    Size = this.bytes_to_int(S, Count);
+    Size = ltoi(S, Count);
     S = S.substring(Count);
-    for (i = 0; i < Size; i++) { El = this.decode_inner(S); Arr.push(El.value); S = El.rest; }
-    return { value: this.tuple(Arr), rest: S };
+    for (i = 0; i < Size; i++) { El = bert.de_inner(S); Arr.push(El.value); S = El.rest; }
+    return { value: bert.tuple(Arr), rest: S };
 };
 
-BertClass.prototype.decode_nil = function (S) { return { value: [], rest: S }; };
+bert.de_nil = function (S) { return { value: [], rest: S }; };
 
-// - UTILITY FUNCTIONS -
+bert.de_inner = function (S) {
+    var Type = S[0];
+    S = S.substring(1);
+    switch (Type) {
+        case SATOM: bert.de_atom(S, 1);
+        case ATOM: return bert.de_atom(S, 2);
+        case BINARY: return bert.de_binary(S);
+        case SINT: return bert.de_integer(S, 1);
+        case INT: return bert.de_integer(S, 4);
+        case FLOAT: return bert.de_float(S);
+        case STR: return bert.de_string(S);
+        case LIST: return bert.de_list(S);
+        case TUPLE: return bert.de_tuple(S, 1);
+        case NIL: return this.de_nil(S);
+        default: throw ("BERT: " + S.charCodeAt(0));
+    }
+};
 
-BertClass.prototype.int_to_bytes = function (Int, Length) {
+itol = function (Int, Length) {
     var isNegative, OriginalInt, i, Rem, s = "";
     isNegative = (Int < 0);
     if (isNegative) { Int = Int * (0 - 1); }
@@ -229,11 +167,11 @@ BertClass.prototype.int_to_bytes = function (Int, Length) {
         s = String.fromCharCode(Rem) + s;
         Int = Math.floor(Int / 256);
     }
-    if (Int > 0) { throw ("Argument out of range: " + OriginalInt); }
+    if (Int > 0) { throw ("BERT: Range: " + OriginalInt); }
     return s;
 };
 
-BertClass.prototype.bytes_to_int = function (S, Length) {
+ltoi = function (S, Length) {
     var isNegative, i, n, Num = 0;
     isNegative = (S.charCodeAt(0) > 128);
     for (i = 0; i < Length; i++) {
@@ -246,31 +184,22 @@ BertClass.prototype.bytes_to_int = function (S, Length) {
     return Num;
 };
 
-BertClass.prototype.bignum_to_bytes = function (Int) {
-    var isNegative, Rem, s = "";
-    isNegative = Int < 0;
-    if (isNegative) { Int *= -1; s += String.fromCharCode(1); } else { s += String.fromCharCode(0); }
-    while (Int !== 0) { Rem = Int % 256; s += String.fromCharCode(Rem); Int = Math.floor(Int / 256); }
-    return s;
+bert.encode = function (o) { return BERT + bert.en_inner(o); };
+bert.decode = function (S) {
+    if (S[0] !== BERT) { throw ("Not a valid BERT."); }
+    var Obj = this.de_inner(S.substring(1));
+    if (Obj.rest !== "") { throw ("Invalid BERT."); }
+    return Obj.value;
 };
 
-BertClass.prototype.bytes_to_bignum = function (S, Count) {
-    var isNegative, i, n, Num = 0;
-    isNegative = (S.charCodeAt(0) === 1);
-    S = S.substring(1);
-    for (i = Count - 1; i >= 0; i--) {
-        n = S.charCodeAt(i);
-        if (Num === 0) { Num = n; } else { Num = Num * 256 + n; }
-    }
-    if (isNegative) { return Num * -1; }
-    return Num;
+bert.ltoa = function (a) { for (var i = 0,s=""; i < a.length; i++) s += itoa(a[i]); return s; };
+bert.decodebuf = function (S) { return bert.decode(bert.ltoa(new Uint8Array(S))); };
+bert.encodebuf = function (s) { 
+    var ori = bert.encode(s);
+    var buf = new Uint8Array(new ArrayBuffer(ori.length));
+    var s = "";
+    for (var i=0; i < buf.length; i++) { buf[i] = ori.charCodeAt(i); s+=","+buf[i]; }
+    return new Blob([buf.buffer]);
 };
 
-BertClass.prototype.bytes_to_string = function (byteArray) {
-    var i, s = "";
-    for (i = 0; i < byteArray.length; i++) s += String.fromCharCode(byteArray[i]);
-    return s;
-};
-
-var bert = new BertClass();
-var Bert = bert;
+Bert = bert;
