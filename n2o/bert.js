@@ -1,5 +1,4 @@
-
-// Micro BER encoder/decoder
+// Micro BERT encoder/decoder
 // Copyright (c) Maxim Sokhatsky (@5HT)
 
 bert = {};
