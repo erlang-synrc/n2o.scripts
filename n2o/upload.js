@@ -4,7 +4,7 @@ function Upload(id, options){
   var $input = document.querySelector(id);
   var self = this;
   var pid, reader, cancelled, paused, start_time, file, file_index = 0, start_file_index;
-  var block_size = 5*1024*1024;
+  var block_size = 1048576;
   if (options.block_size) block_size = options.block_size;
 
   var dispatchEvent = function(name, detail){ $input.dispatchEvent(new CustomEvent(name, {'detail': detail})); };
