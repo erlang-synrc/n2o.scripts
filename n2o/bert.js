@@ -2,7 +2,7 @@
 // Copyright (c) Maxim Sokhatsky (@5HT)
 
 function atom(o) { return { type: "Atom", value: o, toString: function() { return this.value; } }; };
-function bin(o) { return { type: "Binary", value: o, toString: function() { "<<'"+this.value;+"'>>" } }; };
+function bin(o) { return { type: "Binary", value: o, toString: function() { return "<<\'"+this.value+"'>>"; } }; };
 function tuple() {
     return { type: "Tuple", value: arguments, toString: function() { var s = ""; 
         for (var i=0;i<this.value.length;i++) { if (s!=="") s+=","; s+=this.value[i]; }
