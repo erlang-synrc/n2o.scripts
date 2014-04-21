@@ -46,11 +46,15 @@ function WebSocketsInit(){
                 }
 
                 if (msg.eval) { // Eval
-                    try{eval(msg.eval);}catch(e){console.log(e); console.log(msg.eval);};
 //                    addStatus("Evaluate: " + msg.eval);
+                    try{eval(msg.eval);}catch(e){console.log(e); console.log(msg.eval);};
                 }
 
             } catch (ex) { // try to parse known binary formats
+
+                console.log("JSON parsing failed: " + ex);
+                console.log("MessageEvent: ");
+                console.log(evt.data);
 
                 var reader = new FileReader();
                 reader.addEventListener("loadend", function() {
@@ -78,6 +82,7 @@ function WebSocketsInit(){
                     }
 
                 });
+                console.log(evt.data);
                 reader.readAsArrayBuffer(evt.data);
 
             }
