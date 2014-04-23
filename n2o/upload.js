@@ -7,7 +7,7 @@ function Upload(id, options){
   var block_size = 1048576;
   if (options.block_size) block_size = options.block_size;
 
-  var dispatchEvent = function(name, detail){ $input.dispatchEvent(new CustomEvent(name, {'detail': detail})); };
+  var dispatchEvent = function(name, detail){$input.dispatchEvent(new CustomEvent(name, {'detail': detail})); };
   var hide_btns = function(){for(var i=0; i< file_btns.length;++i){file_btns[i].style.display='none';}};
   var create_btn= function(title,html, clazz){
     var btn = document.createElement('a');btn.setAttribute('href', '#');btn.title=title;btn.innerHTML=html;
@@ -108,7 +108,7 @@ function Upload(id, options){
     hide_btns();
 
     browse_btn.style.display='block';
-    upload_btn.style.display='block';
+    upload_btn.style.display='inline-block';
     cancel_btn.style.display='block';
 
     progress_bar.style.width="0";
@@ -171,6 +171,14 @@ function Upload(id, options){
   $input.addEventListener('error', function(e){ error(e.detail.msg); });
   $input.addEventListener('reset', reset_upload);
   $input.addEventListener('progress_changed', function(e){progress_bar.style.width=e.detail.progress + "%";});
+  $input.addEventListener('complete_replace', function(e){
+    var im = document.createElement('img');
+    im.setAttribute('src',  e.detail.file);
+    im.style.width='100%';
+    var pa = this.parentNode;
+    pa.removeChild(this.previousSibling);
+    pa.replaceChild(im, this);
+  });
 
   var browse_btn = create_btn('browse', 'browse', 'fi-browse');
   browse_btn.addEventListener('click', function(e){$input.click(); e.preventDefault();}, false);
@@ -225,7 +233,7 @@ function Upload(id, options){
 
   $input.parentNode.insertBefore(fu, $input);
 
-  if(options.value !== "undefined") preview.innetHTML("<img src='"+ options.value +"'/>");
+  if(options.value !== "undefined") preview.innerHTML("<img src='"+ options.value +"'/>");
 
   var file_btns = fu.querySelectorAll("a");
 
