@@ -4,7 +4,6 @@ function Htmlbox(id) {
     toolbar: [
       {title:'image',     cmd: {name:'insertHtml', tag:'wire_upload'},   icon: 'fa-picture-o' },
       {title:'bold',      cmd: {name:'Bold'}, icon:'fa-bold'},
-      {title:'bold',      cmd: {name:'Bold'}},
       {title:'blockquote',cmd: {name:'formatBlock',arg:'blockquote'},icon:'fa-quote-right'},
       {title:'code',      cmd: {name:'formatBlock',arg:'pre'},      icon:'fa-code'}]};
 
