@@ -9,8 +9,8 @@ function tuple() {
         return "{" + s + "}"; } }; };
 function dec(S) { return decode(ltoa(new Uint8Array(S))); };
 function enc(s) {
-    var ori = encode(s), buf = new Uint8Array(new ArrayBuffer(ori.length)), s = "";
-    for (var i=0; i < buf.length; i++) { buf[i] = ori.charCodeAt(i); s+=","+buf[i]; }
+    var ori = encode(s), buf = new Uint8Array(new ArrayBuffer(ori.length));
+    for (var i=0; i < buf.length; i++) { buf[i] = ori.charCodeAt(i); }
     return new Blob([buf.buffer]); };
 
 BERT = itoa(131);
@@ -22,6 +22,8 @@ INT = itoa(98);
 FLOAT = itoa(99);
 STR = itoa(107);
 LIST = itoa(108);
+SBIG = itoa(110);
+LBIG = itoa(111);
 TUPLE = itoa(104);
 LTUPLE = itoa(105);
 NIL = itoa(106);
@@ -52,6 +54,15 @@ function ltoi(S, Length) {
         else { Num = Num * 256 + n; }
     }
     if (isNegative) { Num = Num * (0 - 1); }
+    return Num; };
+function ltobi(S, Count) {
+    var isNegative, i, n, Num = 0;
+    isNegative = (S.charCodeAt(0) === 1);
+    S = S.substring(1);
+    for (i = Count - 1; i >= 0; i--) {
+        n = S.charCodeAt(i);
+        if (Num === 0) { Num = n; } else { Num = Num * 256 + n; } }
+    if (isNegative) { return Num * -1; }
     return Num; };
 
 function encode(o) { return BERT + en_inner(o); };
@@ -101,6 +112,8 @@ function de_inner(S) {
         case SINT: return de_integer(S, 1);
         case INT: return de_integer(S, 4);
         case FLOAT: return de_float(S);
+        case SBIG: return de_big(S,1);
+        case LBIG: return de_big(S,4);
         case STR: return de_string(S);
         case LIST: return de_list(S);
         case TUPLE: return de_tuple(S, 1);
@@ -118,6 +131,12 @@ function de_bin(S) {
     var Size = ltoi(S, 4);
     S = S.substring(4);
     return { value: bin(S.substring(0, Size)), rest: S.substring(Size) }; };
+function de_big(S, Count) {
+    var Size, Value;
+    Size = ltoi(S, Count);
+    S = S.substring(Count);
+    Value = ltobi(S, Size);
+    return { value : Value, rest: S.substring(Size + 1) }; };
 function de_integer(S, Count) {
     var Value = ltoi(S, Count);
     S = S.substring(Count);
@@ -128,7 +147,7 @@ function de_float(S) {
 function de_string(S) {
     var Size = ltoi(S, 2);
     S = S.substring(2);
-    return { value: S.substring(0, Size), rest:  S.substring(Size) }; };
+    return { value: S.substring(0, Size), rest: S.substring(Size) }; };
 function de_list(S) {
     var Size, i, El, LastChar, Arr = [];
     Size = ltoi(S, 4);
