@@ -9,6 +9,7 @@ Optional
 
 * XHR fallback driver
 * UPLOAD element for big files
+* HTML editor
 
 Credits
 -------
